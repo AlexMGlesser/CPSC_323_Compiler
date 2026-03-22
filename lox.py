@@ -1,46 +1,35 @@
-from pdb import run
-import sys
-from pathlib import Path
+import re
 
-had_error = False
+class TokenType:
+    EOF = "EOF"
+    IDENTIFIER = "IDENTIFIER"
+    NUMBER = "NUMBER"
+    # Define other tokens (e.g., PLUS, MINUS, etc.)
 
-def usage():
-    print("Usage: lox [script]")
-    sys.exit(64)
+class Token:
+    def __init__(self, type, value):
+        self.type = type
+        self.value = value
 
-def runPrompt():
-    while True:
-        try:
-            line = input("> ")
-        except EOFError:
-            break
-        run(line)
+    def __repr__(self):
+        return f"Token({self.type}, {self.value})"
 
-def runFile(path):
-    text = Path(path).read_text(encoding=None)
-    run(text)
+class Scanner:
+    def __init__(self, source):
+        self.source = source
+        self.tokens = []
+        self.start = 0
+        self.current = 0
 
-def run(source):
-    scanner = Scanner(source)
-    tokens = scanner.scanTokens()
+    def scan_tokens(self):
+        while not self.is_at_end():
+            self.advance()
+        self.tokens.append(Token(TokenType.EOF, ""))
+        return self.tokens
 
-    for token in tokens:
-        print(token)
+    def advance(self):
+        self.current += 1
+        return self.source[self.current - 1]
 
-
-def error(line, message):
-    report(line, "", message)
-
-def report(line, where, message):
-    global had_error
-    print(f"[line {line}] Error{where}: {message}", file=sys.stderr)
-    had_error = True
-
-def main():
-    if __name__ == "__main__":
-        if len(sys.argv) > 1:
-            usage()
-        elif len(sys.argv) == 1:
-            runFile(sys.argv[0])
-        else:
-            runPrompt()
+    def is_at_end(self):
+        return self.current >= len(self.source)
