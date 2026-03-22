@@ -262,3 +262,90 @@ if __name__ == "__main__":
         run_file(sys.argv[1])
     else:
         run_prompt()
+
+
+class Expr:
+    pass
+
+
+class Binary(Expr):
+    def __init__(self, left: "Expr", operator: Token, right: "Expr"):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+    def accept(self, visitor):
+        return visitor.visit_binary_expr(self)
+
+
+class Grouping(Expr):
+    def __init__(self, expression: "Expr"):
+        self.expression = expression
+
+    def accept(self, visitor):
+        return visitor.visit_grouping_expr(self)
+
+
+class Literal(Expr):
+    def __init__(self, value: object):
+        self.value = value
+
+    def accept(self, visitor):
+        return visitor.visit_literal_expr(self)
+
+
+class Unary(Expr):
+    def __init__(self, operator: Token, right: "Expr"):
+        self.operator = operator
+        self.right = right
+
+    def accept(self, visitor):
+        return visitor.visit_unary_expr(self)
+
+
+class ExprVisitor:
+    def visit_binary_expr(self, expr: Binary) -> str:
+        raise NotImplementedError()
+
+    def visit_grouping_expr(self, expr: Grouping) -> str:
+        raise NotImplementedError()
+
+    def visit_literal_expr(self, expr: Literal) -> str:
+        raise NotImplementedError()
+
+    def visit_unary_expr(self, expr: Unary) -> str:
+        raise NotImplementedError()
+
+class AstPrinter(ExprVisitor):
+    def visit_binary_expr(self, expr: Binary) -> str:
+        return self.parenthesize(expr.operator.lexeme, expr.left, expr.right)
+
+    def visit_grouping_expr(self, expr: Grouping) -> str:
+        return self.parenthesize("group", expr.expression)
+
+    def visit_literal_expr(self, expr: Literal) -> str:
+        if expr.value is None:
+            return "nil"
+        return str(expr.value)
+
+    def visit_unary_expr(self, expr: Unary) -> str:
+        return self.parenthesize(expr.operator.lexeme, expr.right)
+
+    def parenthesize(self, name: str, *exprs: Expr) -> str:
+        builder = "(" + name
+        for expr in exprs:
+            builder += " " + expr.accept(self)
+        return builder + ")"
+
+
+def main():
+    left_expr = Unary(Token(TokenType.MINUS, "-", None, 1), Literal(123))
+    right_expr = Grouping(Literal(45.67))
+    binary_expr = Binary(left_expr, Token(TokenType.STAR, "*", None, 1), right_expr)
+
+    printer = AstPrinter()
+    print(printer.visit_binary_expr(binary_expr))
+
+
+if __name__ == "__main__":
+    main()
