@@ -1,0 +1,2 @@
+// test_undefinedvariable.lox
+print x; // Should error: Undefined variable 'x'.

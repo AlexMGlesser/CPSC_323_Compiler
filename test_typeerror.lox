@@ -1,0 +1,2 @@
+// test_typeerror.lox
+print 1 + "string"; // Should error: Operands must be two numbers or two strings.

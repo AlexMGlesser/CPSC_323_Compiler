@@ -1,0 +1,41 @@
+// test_working.lox
+// Variables
+var x = 10;
+var y = 20;
+print x + y;
+
+// Functions
+fun add(a, b) {
+  return a + b;
+}
+print add(3, 4);
+
+// Closures
+fun makeCounter() {
+  var count = 0;
+  fun inc() {
+    count = count + 1;
+    return count;
+  }
+  return inc;
+}
+var counter = makeCounter();
+print counter();
+print counter();
+
+// Control flow
+if (x < y) {
+  print "x is less than y";
+} else {
+  print "x is not less than y";
+}
+
+// While loop
+var i = 0;
+while (i < 3) {
+  print i;
+  i = i + 1;
+}
+
+// Native function
+print clock();

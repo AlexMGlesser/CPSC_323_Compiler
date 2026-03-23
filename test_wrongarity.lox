@@ -1,0 +1,5 @@
+// test_wrongarity.lox
+fun foo(a, b) {
+  print a + b;
+}
+foo(1); // Should error: Expected 2 arguments but got 1.
