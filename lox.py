@@ -484,3 +484,154 @@ class Parser:
                 return
 
             self.advance()
+
+class RuntimeError(Exception):
+    def __init__(self, token, message):
+        super().__init__(message)
+        self.token = token
+
+
+class Interpreter(ExprVisitor):
+    def visit_binary_expr(self, expr: Binary) -> object:
+        left = self.evaluate(expr.left)
+        right = self.evaluate(expr.right)
+
+        if expr.operator.type == TokenType.PLUS:
+            if isinstance(left, float) and isinstance(right, float):
+                return left + right
+            elif isinstance(left, str) and isinstance(right, str):
+                return left + right
+            else:
+                raise RuntimeError(expr.operator,
+                                   "Operands must be two numbers or two strings.")
+        elif expr.operator.type == TokenType.MINUS:
+            self.check_number_operands(expr.operator, left, right)
+            return float(left) - float(right)
+        elif expr.operator.type == TokenType.STAR:
+            self.check_number_operands(expr.operator, left, right)
+            return float(left) * float(right)
+        elif expr.operator.type == TokenType.SLASH:
+            self.check_number_operands(expr.operator, left, right)
+            if right == 0.0:
+                raise RuntimeError(expr.operator,
+                                   "Division by zero.")
+            return float(left) / float(right)
+        elif expr.operator.type == TokenType.GREATER:
+            self.check_number_operands(expr.operator, left, right)
+            return float(left) > float(right)
+        elif expr.operator.type == TokenType.GREATER_EQUAL:
+            self.check_number_operands(expr.operator, left, right)
+            return float(left) >= float(right)
+        elif expr.operator.type == TokenType.LESS:
+            self.check_number_operands(expr.operator, left, right)
+            return float(left) < float(right)
+        elif expr.operator.type == TokenType.LESS_EQUAL:
+            self.check_number_operands(expr.operator, left, right)
+            return float(left) <= float(right)
+        elif expr.operator.type == TokenType.BANG_EQUAL:
+            return not self.is_equal(left, right)
+        elif expr.operator.type == TokenType.EQUAL_EQUAL:
+            return self.is_equal(left, right)
+
+        return None
+
+    def visit_grouping_expr(self, expr: Grouping) -> object:
+        return self.evaluate(expr.expression)
+
+    def visit_literal_expr(self, expr: Literal) -> object:
+        return expr.value
+
+    def visit_unary_expr(self, expr: Unary) -> object:
+        right = self.evaluate(expr.right)
+
+        if expr.operator.type == TokenType.BANG:
+            return not self.is_truthy(right)
+        elif expr.operator.type == TokenType.MINUS:
+            self.check_number_operand(expr.operator, right)
+            return -float(right)
+
+        return None
+
+    def evaluate(self, expr: Expr) -> object:
+        return expr.accept(self)
+
+    def is_truthy(self, object):
+        if object is None:
+            return False
+        if isinstance(object, bool):
+            return object
+        return True
+
+    def check_number_operand(self, operator: Token, operand):
+        if isinstance(operand, float):
+            return
+        raise RuntimeError(operator, "Operand must be a number.")
+
+    def check_number_operands(self, operator: Token, left, right):
+        if isinstance(left, float) and isinstance(right, float):
+            return
+        raise RuntimeError(operator, "Operands must be numbers.")
+
+    def is_equal(self, a, b):
+        if a is None and b is None:
+            return True
+        if a is None:
+            return False
+        return a == b
+
+    def stringify(self, object) -> str:
+        if object is None:
+            return "nil"
+        if isinstance(object, float):
+            text = str(object)
+            if text.endswith(".0"):
+                text = text[:-2]
+            return text
+        return str(object)
+
+
+def run(source: str):
+    scanner = Scanner(source)
+    tokens = scanner.scan_tokens()
+    parser = Parser(tokens)
+    expression = parser.parse()
+
+    if had_error:
+        return
+
+    interpreter = Interpreter()
+    try:
+        value = interpreter.evaluate(expression)
+        print(interpreter.stringify(value))
+    except RuntimeError as error:
+        Lox.runtime_error(error)
+
+
+def run_file(path: str):
+    with open(path, "r", encoding="utf-8") as file:
+        source = file.read()
+    had_error = False
+    had_runtime_error = False
+
+    try:
+        run(source)
+    except RuntimeError as error:
+        had_runtime_error = True
+
+    if had_error:
+        sys.exit(65)
+    elif had_runtime_error:
+        sys.exit(70)
+
+
+def Lox.runtime_error(error: RuntimeError):
+    print(f"[line {error.token.line}] Error: {error}", file=sys.stderr)
+    global had_runtime_error
+    had_runtime_error = True
+
+
+if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        run_file(sys.argv[1])
+    else:
+        run_prompt()
