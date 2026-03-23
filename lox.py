@@ -1,3 +1,8 @@
+# Alex Glesser
+# Note: For large lists of type defs in classes (like in TokenType), I had the list of type definitions and a format that plugged into AI so I didn't have to write them all out manually.
+# Any AI use in this project was done on my locally ran LLM.
+
+
 from enum import Enum
 import sys
 
@@ -238,32 +243,6 @@ def run(source: str):
         print(token)
 
 
-def run_file(path: str):
-    with open(path, "r", encoding="utf-8") as file:
-        source = file.read()
-    run(source)
-    if had_error:
-        sys.exit(65)
-
-
-def run_prompt():
-    global had_error
-    while True:
-        try:
-            line = input("> ")
-            had_error = False
-            run(line)
-        except EOFError:
-            break
-
-
-if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        run_file(sys.argv[1])
-    else:
-        run_prompt()
-
-
 class Expr:
     pass
 
@@ -316,6 +295,7 @@ class ExprVisitor:
     def visit_unary_expr(self, expr: Unary) -> str:
         raise NotImplementedError()
 
+
 class AstPrinter(ExprVisitor):
     def visit_binary_expr(self, expr: Binary) -> str:
         return self.parenthesize(expr.operator.lexeme, expr.left, expr.right)
@@ -349,6 +329,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 class ParseError(Exception):
     pass
@@ -485,10 +466,17 @@ class Parser:
 
             self.advance()
 
+
 class RuntimeError(Exception):
     def __init__(self, token, message):
         super().__init__(message)
         self.token = token
+
+
+def Lox_runtime_error(error: RuntimeError):
+    print(f"[line {error.token.line}] Error: {error}", file=sys.stderr)
+    global had_runtime_error
+    had_runtime_error = True
 
 
 class Interpreter(ExprVisitor):
@@ -604,13 +592,13 @@ def run(source: str):
         value = interpreter.evaluate(expression)
         print(interpreter.stringify(value))
     except RuntimeError as error:
-        Lox.runtime_error(error)
+        Lox_runtime_error(error)
 
 
 def run_file(path: str):
     with open(path, "r", encoding="utf-8") as file:
         source = file.read()
-    had_error = False
+
     had_runtime_error = False
 
     try:
@@ -624,10 +612,15 @@ def run_file(path: str):
         sys.exit(70)
 
 
-def Lox.runtime_error(error: RuntimeError):
-    print(f"[line {error.token.line}] Error: {error}", file=sys.stderr)
-    global had_runtime_error
-    had_runtime_error = True
+def run_prompt():
+    global had_error
+    while True:
+        try:
+            line = input("> ")
+            had_error = False
+            run(line)
+        except EOFError:
+            break
 
 
 if __name__ == "__main__":
